@@ -5,35 +5,58 @@ use ink_lang as ink;
 
 #[ink::contract]
 mod tba_substrate {
-    use alloc::string::String;
+    use alloc::{string::String, format};
     
     #[ink(storage)]
     pub struct TbaSubstrate {
-        /// Stores a single `bool` value on the storage.
         message: String,
+	price: u128,
     }
 
     impl TbaSubstrate {
         #[ink(constructor)]
-        pub fn new(init_msg: String) -> Self {
-            Self { message: init_msg }
+        pub fn new(price: u128) -> Self {
+	    let message = String::from("Initialize the Big Announcement contract"); 
+            ink_env::debug_println(&format!("thanks for instantiation {:?}, and price {}", &message, price));
+	    
+            Self {
+		message,
+		price,
+	    }
         }
 
-        #[ink(constructor)]
-        pub fn default() -> Self {
-            Self::new(String::from("Initialize the Big Announcement contract"))
-        }
+	#[ink(message, payable)]
+	pub fn set_message(&mut self, new_msg: String) {
+	    let new_price = 99999999999999;
+	    
+	    self.price = new_price;
+	    self.message = new_msg;
+	    
+	    ink_env::debug_println(&format!("Thanks for posting the message {:?}", &self.message));
 
-        #[ink(message)]
-	#[ink(payable)] 
-        pub fn set_message(&mut self, new_msg: String) {
-            self.message = new_msg;
-        }
+	    /*
+	    let new_price = self.env().transferred_balance();
 
+	    if new_price > self.price {
+		self.price = new_price;
+		self.message = new_msg;
+		
+		ink_env::debug_println(&format!("Thanks for posting the message {:?}", &self.message));
+	    } else {
+		ink_env::debug_println(&format!("You should pay a greater price than current one {}", self.price));
+	    }	   
+	    */
+	}
+	    
         #[ink(message)]
         pub fn get_message(&self) -> String {
             self.message.clone()
         }
+
+        #[ink(message)]
+	pub fn get_price(&self) -> u128 {
+	    self.price
+	}
     }
 
     /// Unit tests in Rust are normally defined within such a `#[cfg(test)]`
@@ -44,20 +67,20 @@ mod tba_substrate {
         /// Imports all the definitions from the outer scope so we can use them here.
         use super::*;
 
-        /// We test if the default constructor does its job.
         #[test]
-        fn default_works() {
-            let tba_substrate = TbaSubstrate::default();
-            assert_eq!(tba_substrate.get_message(), "Initialize the Big Announcement contract");
+        fn new_works() {
+            let tba = TbaSubstrate::new(340282366920938463463374607431768211455);
+            assert_eq!(tba.get_message(), "Initialize the Big Announcement contract");
+	    assert_eq!(tba.get_price(), 340282366920938463463374607431768211455);
         }
 
-        /// We test a simple use case of our contract.
         #[test]
-        fn it_works() {
-            let mut tba_substrate = TbaSubstrate::new(String::from("29D372BE8063788245AC697CBE0546525B64D39092A2DE06BA6FDCA4AEA5EB3F"));
-            assert_eq!(tba_substrate.get_message(), "29D372BE8063788245AC697CBE0546525B64D39092A2DE06BA6FDCA4AEA5EB3F");
-            tba_substrate.set_message(String::from("Initialize the Big Announcement contract"));
-	    assert_eq!(tba_substrate.get_message(), "Initialize the Big Announcement contract");
-        }
-    }
+        fn set_works() {
+            let mut tba = TbaSubstrate::new(1122334455);
+            tba.set_message("new message".to_string());
+	    assert_eq!(tba.get_message(), "new message");
+    	    assert_eq!(tba.get_price(), 99999999999999);
+        } 
+    } 
 }
+
